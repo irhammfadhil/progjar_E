@@ -2,14 +2,14 @@ import socket
 import select
 import os
 
-udp_ip = "127.0.0.1"
+udp_ip = "127.0.0.2"
 port = 9000
 timeout = 3
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((udp_ip, port))
 #sock.listen(10)
 
-path = './fileclient1/'
+path = './fileclient2/'
 if not os.path.exists(path):
 	os.makedirs(path)
 
@@ -22,7 +22,7 @@ while True:
 		name = os.path.splitext(file_name)[0]
 		file_extension = os.path.splitext(file_name)[1]
 		print file_extension
-	filenamedest = name + 'copy1' + file_extension
+	filenamedest = name + 'copy2' + file_extension
 	print filenamedest
 	complete = os.path.join(path, filenamedest)
 	f = open(complete, 'wb')
