@@ -7,6 +7,7 @@ port = 9000
 timeout = 3
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((udp_ip, port))
+#sock.listen(10)
 
 while True:
 	data, addr = sock.recvfrom(1024)
@@ -19,13 +20,13 @@ while True:
 		print file_extension
 	filenamedest = name + 'copy' + file_extension
 	print filenamedest
-	f = open(filenamedest, 'wb+')
+	f = open(filenamedest, 'wb')
 
 	
 	while True:
 		ready = select.select([sock], [], [], timeout)
 		if ready[0]:
-			data, addr = sock.recvfrom(1024)
+			data, addr = sock.recvfrom(10240)
 			f.write(data)
 		else:
 			print "%s Finish!" % file_name
