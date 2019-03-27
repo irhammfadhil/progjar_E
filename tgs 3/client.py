@@ -45,15 +45,6 @@ def put(str, s):
             print 'File not found'
             s.sendall(json.dumps({'cmd' : 'PUT','err' : 'File not found'}))    
 
-def rm(str,s):
-    js = checkArg(str)
-    s.send(json.dumps(js))
-    reply = json.loads(s.recv(1024))   
-    if('err' in reply):
-        print 'File not found'
-    else:
-        print 'Success'
-
 def ls(str,s):
     js = checkArg(str)
     s.send(json.dumps(js))
@@ -82,14 +73,11 @@ def myserver():
         elif(str[0].upper() == "PUT"):
             put(str,s)
 
-        elif(str[0].upper() == "RM"):
-            rm(str,s)
-
         elif(str[0].upper() == "HELP"):
             js = checkArg(str)
             s.send(json.dumps(js))
             print "------------------------------------------------"
-            print "Available command : ls, get, put, rm, quit, help"
+            print "Available command : ls, get, put, quit, help"
             print "------------------------------------------------"
 
         elif(str[0].upper() == "QUIT"):

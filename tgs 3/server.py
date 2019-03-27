@@ -58,18 +58,7 @@ def put(c,data):
                 while (l):
                     f.write(l)
                     l = c.recv(1024)
-                break    
-
-def rm(c,data):
-    if ('arg' not in rcvdData):
-        c.sendall(json.dumps({'cmd' : 'RM','err' : 'syntax error'}))
-    else:
-        filename = './' + rcvdData['arg']
-        if os.path.exists(filename):
-            c.sendall(json.dumps({'cmd' : 'RM', 'action': 'Success'}))
-            os.remove(filename)
-        else:
-            c.sendall(json.dumps({'cmd' : 'RM','err' : 'File not found'}))       
+                break        
 
 def aksi (c):
     global rcvdData
@@ -85,9 +74,6 @@ def aksi (c):
 
         elif(rcvdData['cmd'] == 'PUT'):
             put(c,data)
-
-        elif(rcvdData['cmd'] == 'RM'):
-            rm(c,data)
             
         elif(rcvdData['cmd'] == 'HELP'):
             continue
@@ -104,7 +90,7 @@ def aksi (c):
 while True:
     c, addr = s.accept()
     data = ""
-    print >> sys.stderr, 'conn from', addr
+    #print >> sys.stderr, 'conn from', addr
     thread = Thread(target=aksi, args=(c,))
     thread.start()
     '''
