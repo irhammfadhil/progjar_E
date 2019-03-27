@@ -1,86 +1,101 @@
-import socket
 import os
 import sys
-from threading import Thread
+import glob
+import json
+import socket
 
-path = os.getcwd()
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ip = '127.0.0.1'
-port= 5000
-s.bind((ip, port))
+def checkArg(cmd, data):
+    return {'cmd' : cmd, 'data' : data}
+
+try: 
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print "Socket successfully created"
+except socket.error as err:
+    print "socket creation failed with error %s" %(err)
+    sys.exit()
+
+port = 3000
+
+s.bind(('', port))
+print "socket binded to %s" %(port) 
+
+def ls(c,data):
+    if ('arg' not in rcvdData):
+        files = glob.glob('*')
+    else:
+        files = os.listdir('.')
+
+    for name in files:
+        data = data + name + '   '
+    data = checkArg('LS',data)
+    c.sendall(json.dumps(data))
+
+def get(c,data):
+    if ('arg' not in rcvdData):
+        c.sendall(json.dumps({'cmd' : 'GET','err' : 'syntax error'}))
+    else:
+        filename = './' + rcvdData['arg']
+        if os.path.exists(filename):
+            c.sendall(json.dumps({'cmd' : 'GET', 'action': 'Success'}))
+            with open(filename, 'rb') as f:
+                for line in f:
+                    c.sendall(line)
+        else:
+            c.sendall(json.dumps({'cmd' : 'GET','err' : 'File not found'}))
+
+def put(c,data):
+    if ('err' in rcvdData):
+        print rcvdData['err']
+    else:
+        filename = rcvdData['arg']
+        with open(os.path.join('./', filename), 'wb') as f:
+            while (True):       
+                l = c.recv(1024)
+                while (l):
+                    f.write(l)
+                    l = c.recv(1024)
+                break    
+
+def rm(c,data):
+    if ('arg' not in rcvdData):
+        c.sendall(json.dumps({'cmd' : 'RM','err' : 'syntax error'}))
+    else:
+        filename = './' + rcvdData['arg']
+        if os.path.exists(filename):
+            c.sendall(json.dumps({'cmd' : 'RM', 'action': 'Success'}))
+            os.remove(filename)
+        else:
+            c.sendall(json.dumps({'cmd' : 'RM','err' : 'File not found'}))       
+
 s.listen(5)
-#conn, addr = None
-
-print "Waiting for client..."
-
-def init():
-	#global conn, addr
-	while True:
-		conn, addr = s.accept()
-		print addr
-		data = conn.recv(4096)
-		if str(data) == 'get' or str(data) == 'put':
-			thread = Thread(target=process)
-			thread.start()
-			conn.sendto("Begin", addr)
-
-
-def process(ip, port):
-	global conn, addr
-	addr = (ip, port)
-	while 1:
-		data = conn.recv(4096)
-		print data
-		if not data:
-			break
-		c = listFiles(data)
-		conn.sendall(c)
-		conn.close()
-
-def listFiles(input):
-	global path
-	#print input
-	#path = os.getcwd()
-	#print 'List files and directories in ' + path + ':'
-	files = os.listdir(path)
-	for file in files:
-		#print file
-		if os.path.isdir(file):
-			#print file + ' is a directory'
-			if input == file:
-				#print file
-				newdir = path + "\\" + input
-				#print newdir
-				os.chdir(newdir)
-				path = os.getcwd()
-				#print 'Current path after changing directory: ' + path
-				return 'folder'
-				break
-		elif os.path.isfile(file):
-			#print file + ' is a file'
-			if input == file:
-				#print file
-				with open(input, 'r') as fin:
-					#print 'Isi file ' + input + ' :'
-					e = fin.read()
-					fin.close()
-					return e
-				break
-
-'''
-print ('Waiting for client...')
-s.listen(5)
-conn, addr = s.accept()
-while 1:
-	data = conn.recv(4096)
-	print data
-	if not data:
-		break
-	c = listFiles(data)
-	if c != 'folder':
-		conn.sendall(c)
-conn.close()
-'''
 
 while True:
-	init()
+    c, addr = s.accept()
+    data = ""
+    rcvdData = c.recv(1024)
+    print "Client:",rcvdData
+    rcvdData = json.loads(rcvdData)
+    if (rcvdData['cmd'] == 'LS'):
+        ls(c,data)
+
+    elif(rcvdData['cmd'] == 'GET'):
+        get(c,data)
+
+    elif(rcvdData['cmd'] == 'PUT'):
+        put(c,data)
+
+    elif(rcvdData['cmd'] == 'RM'):
+        rm(c,data)
+        
+    elif(rcvdData['cmd'] == 'HELP'):
+        continue
+
+    elif(rcvdData['cmd'] == 'QUIT'):
+        break
+
+    else:
+        c.sendall(json.dumps({'cmd' : 'QUIT','data' : 'Unknown Command!'}))
+
+    c.close()
+
+s.close()
