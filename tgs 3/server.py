@@ -3,6 +3,9 @@ import sys
 import glob
 import json
 import socket
+from threading import Thread
+
+rcvdData = ''
 
 def checkArg(cmd, data):
     return {'cmd' : cmd, 'data' : data}
@@ -17,7 +20,8 @@ except socket.error as err:
 port = 3000
 
 s.bind(('', port))
-print "socket binded to %s" %(port) 
+print "socket binded to %s" %(port)
+s.listen(10) 
 
 def ls(c,data):
     if ('arg' not in rcvdData):
@@ -67,11 +71,43 @@ def rm(c,data):
         else:
             c.sendall(json.dumps({'cmd' : 'RM','err' : 'File not found'}))       
 
-s.listen(5)
+def aksi (c):
+    global rcvdData
+    while True:
+        rcvdData = c.recv(1024)
+        print "Client:",rcvdData
+        rcvdData = json.loads(rcvdData)
+        if (rcvdData['cmd'] == 'LS'):
+            ls(c,data)
+
+        elif(rcvdData['cmd'] == 'GET'):
+            get(c,data)
+
+        elif(rcvdData['cmd'] == 'PUT'):
+            put(c,data)
+
+        elif(rcvdData['cmd'] == 'RM'):
+            rm(c,data)
+            
+        elif(rcvdData['cmd'] == 'HELP'):
+            continue
+
+        elif(rcvdData['cmd'] == 'QUIT'):
+            break
+
+        else:
+            c.sendall(json.dumps({'cmd' : 'QUIT','data' : 'Unknown Command!'}))
+
+        c.close()
+
 
 while True:
     c, addr = s.accept()
     data = ""
+    print >> sys.stderr, 'conn from', addr
+    thread = Thread(target=aksi, args=(c,))
+    thread.start()
+    '''
     rcvdData = c.recv(1024)
     print "Client:",rcvdData
     rcvdData = json.loads(rcvdData)
@@ -95,7 +131,6 @@ while True:
 
     else:
         c.sendall(json.dumps({'cmd' : 'QUIT','data' : 'Unknown Command!'}))
-
-    c.close()
+    '''
 
 s.close()
